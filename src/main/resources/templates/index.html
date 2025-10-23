@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Content Transformer</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; padding: 20px; }
+        textarea { width:100%; height:200px }
+        .btn { padding:8px 14px; margin-top:8px }
+        .section { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+<h1>Konwerter programow KukaSim 8.6 do Kuka 8.3</h1>
+
+
+
+<hr>
+
+<h2>Upload plików SRC i DAT</h2>
+<form action="/upload-two" method="post" enctype="multipart/form-data">
+    <label>SRC File:</label>
+    <input type="file" name="srcFile" accept=".src" required><br><br>
+
+    <label>DAT File:</label>
+    <input type="file" name="datFile" accept=".dat" required><br><br>
+
+    <button type="submit">Wyślij i pobierz ZIP</button>
+</form>
+
+</body>
+</html>

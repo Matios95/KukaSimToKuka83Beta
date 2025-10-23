@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Wynik — Content Transformer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; padding: 20px; }
+        pre { background:#f5f5f5; padding:10px }
+    </style>
+</head>
+<body>
+<h1>Wynik przetwarzania</h1>
+<pre th:text="${resultText}">RESULT</pre>
+
+
+<p><a th:href="@{/}">Wróć</a></p>
+</body>
+</html>
