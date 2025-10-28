@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>KUKA Program Converter</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f6f6f6;
+            margin: 0;
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px 30px;
+            width: 400px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="file"] {
+            margin-top: 5px;
+            width: 100%;
+        }
+        button {
+            background-color: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #005fa3;
+        }
+    </style>
+</head>
+<body>
+
+<h1>KUKA Program Converter</h1>
+
+<div class="container">
+
+    <!-- Sekcja 1: Konwersja 8.6 -> 8.3 -->
+    <div class="section">
+        <h2>Konwersja 8.6 ➜ 8.3</h2>
+        <form action="/upload-eight-six-to-eight-three" method="post" enctype="multipart/form-data">
+            <label for="srcFile86">Plik SRC:</label>
+            <input type="file" id="srcFile86" name="srcFile" accept=".src" required>
+
+            <label for="datFile86">Plik DAT:</label>
+            <input type="file" id="datFile86" name="datFile" accept=".dat" required>
+
+            <button type="submit">Wyślij i pobierz ZIP</button>
+        </form>
+    </div>
+
+    <!-- Sekcja 2: Konwersja 8.3 -> 8.6 -->
+    <div class="section">
+        <h2>Konwersja 8.3 ➜ 8.6</h2>
+        <form action="/upload-eight-three-to-eight-six" method="post" enctype="multipart/form-data">
+            <label for="srcFile83">Plik SRC:</label>
+            <input type="file" id="srcFile83" name="srcFile" accept=".src" required>
+
+            <label for="datFile83">Plik DAT:</label>
+            <input type="file" id="datFile83" name="datFile" accept=".dat" required>
+
+            <button type="submit">Wyślij i pobierz ZIP</button>
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>

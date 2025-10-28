@@ -22,7 +22,7 @@ public class ContentService {
         Matcher m;
         List<String> output = new ArrayList<>();
         Pattern p = Pattern.compile(
-                ";FOLD\\s+(PTP|LIN|CIRC)\\s(\\S+)\\s?(\\S+|)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+).",
+                ";FOLD\\s+(PTP|LIN)\\s(\\S+)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+).",
                 Pattern.CASE_INSENSITIVE);
         for (String line : lines) {
             m = p.matcher(line);
@@ -55,10 +55,10 @@ public class ContentService {
         String cParams = "";
         String type = m.group(1).toUpperCase();    //PTP, LIN, CIRC
         String point = m.group(2);                 //p1, p2, home
-        String point2 = m.group(3);                //p1, p2, home w przypadku CIRC!
-        String cdis = m.group(4);                  //CONT
-        String vel = m.group(5);                   //40%, 1.0 m/s
-        String dat = m.group(6);                   //PDAT1, CPDAT1
+        //String point2 = m.group(3);                //p1, p2, home w przypadku CIRC!
+        String cdis = m.group(3);                  //CONT
+        String vel = m.group(4);                   //40%, 1.0 m/s
+        String dat = m.group(5);                   //PDAT1, CPDAT1
         rTag = switch (type) {
             case "PTP" -> {
                 if (cdis.contains("CONT")) cParams = "C_PTP";
@@ -71,10 +71,10 @@ public class ContentService {
                         point, cParams, vel, dat);
             }
             case "CIRC" -> {
-                // dla CIRC potrzebujemy dwóch punktów w %P
+                // dla CIRC potrzebujemy dwóch punktów w %P //todo
                 if (cdis.contains("CONT")) cParams = "C_DIS C_DIS";
                 yield String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VCIRC,%%P 1:CIRC, 2:%s, 3:%s, 4:%s, 6:%s, 8:%s",
-                        point, point2, cParams, vel, dat);
+                        point, point, cParams, vel, dat);
             }
             default -> rTag;
         };
@@ -87,7 +87,6 @@ public class ContentService {
         String[] lines = input.split("\\R");
         StringBuilder output = new StringBuilder();
         Pattern e6Pattern = Pattern.compile("(E1\\s+)([-\\d.Ee]+)(,\\s*E2\\s+)([-\\d.Ee]+)(,\\s*E3\\s+)([-\\d.Ee]+)");
-
         for (String line : lines) {
             Matcher m = e6Pattern.matcher(line);
             if (m.find()) {
@@ -100,5 +99,92 @@ public class ContentService {
         }
 
         return output.toString();
+    }
+
+    public String transformDatFromKukaOld(String input) {
+        String[] lines = input.split("\\R");
+        StringBuilder output = new StringBuilder();
+        Pattern e6Pattern = Pattern.compile("(E1\\s+)([-\\d.Ee]+)(,\\s*E2\\s+)([-\\d.Ee]+)(,\\s*E3\\s+)([-\\d.Ee]+)");
+
+        for (String line : lines) {
+            Matcher m = e6Pattern.matcher(line);
+            if (m.find()) {
+                String e2 = m.group(4);
+                String e3 = m.group(6);
+                String newLine = m.replaceAll("E1 0.0,E2 " + e2 + ",E3 " + e3);
+                if (!e2.equals(e3)) System.out.println("Problem E2 != E3!!!!!!!" + line);
+                output.append(newLine).append(System.lineSeparator());
+            } else {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
+
+        return output.toString();
+    }
+
+    public static String transformSrcFromKukaOld(String input) {
+        boolean inMoveBlock = false;
+        List<String> lines = List.of(input.split("\\R")); // podział po liniach
+        Matcher m;
+        List<String> output = new ArrayList<>();
+        Pattern p = Pattern.compile(
+                ";FOLD\\s+(PTP|LIN)\\s(\\S+)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+).",
+                Pattern.CASE_INSENSITIVE);
+        for (String line : lines) {
+            m = p.matcher(line);
+            output.add(line);
+            if (m.find()) {
+                output.add(";FOLD Parameters ;%{h}");
+                output.add(generateLineFromKukaOld(line, m));
+                output.add(";ENDFOLD");
+            }
+        }
+        return String.join(System.lineSeparator(), output);
+
+    }
+
+    private static String generateLineFromKukaOld(String line, Matcher m) {
+        String rTag = "";
+        String cont = "False";
+        String type = m.group(1).toUpperCase();    //PTP, LIN, CIRC
+        String point = m.group(2);                 //p1, p2, home
+        String cdis = m.group(3);                  //CONT
+        String vel = m.group(4);                   //40%, 1.0 m/s
+        String dat = m.group(5);                   //PDAT1, CPDAT1
+        if (cdis.contains("CONT")) cont = "True";
+        rTag = switch (type) {
+            case "PTP" -> {
+                yield String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
+                                "Kuka.IsGlobalPoint=False; " +
+                                "Kuka.PointName=%s; " +
+                                "Kuka.BlendingEnabled=%s; " +
+                                "Kuka.APXEnabled=False; " +
+                                "Kuka.MoveDataPtpName=%s; " +
+                                "Kuka.VelocityPtp=%s; " +
+                                "Kuka.CurrentCDSetIndex=0; " +
+                                "Kuka.MovementParameterFieldEnabled=True; " +
+                                "IlfCommand=PTP; " +
+                                "SimId=",
+                        point, cont, dat, vel);
+            }
+
+            case "LIN" -> {
+                yield String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
+                                "Kuka.IsGlobalPoint=False; " +
+                                "Kuka.PointName=%s; " +
+                                "Kuka.BlendingEnabled=%s; " +
+                                "Kuka.APXEnabled=False; " +
+                                "Kuka.MoveDataName=%s; " +
+                                "Kuka.VelocityPath=%s; " +
+                                "Kuka.CurrentCDSetIndex=0; " +
+                                "Kuka.MovementParameterFieldEnabled=True; " +
+                                "IlfCommand=LIN; " +
+                                "SimId=",
+                        point, cont, dat, vel);
+            }
+            default -> rTag;
+        };
+        System.out.println(rTag);
+        return rTag;
     }
 }

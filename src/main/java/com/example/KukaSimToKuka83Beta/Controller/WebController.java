@@ -26,11 +26,11 @@ public class WebController {
 
     @GetMapping("/")
     public String index() {
-        return "index";
+        return "index2";
     }
 
-    @PostMapping("/upload-two")
-    public ResponseEntity<InputStreamResource> uploadTwoFiles(
+    @PostMapping("/upload-eight-six-to-eight-three")
+    public ResponseEntity<InputStreamResource> uploadTwoFilesToOld(
             @RequestParam("srcFile") MultipartFile srcFile,
             @RequestParam("datFile") MultipartFile datFile
     ) {
@@ -53,7 +53,44 @@ public class WebController {
             InputStreamResource resource = new InputStreamResource(bais);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=processed_files.zip");
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=FromKukaSimProgram.zip");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(baos.size())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @PostMapping("/upload-eight-three-to-eight-six")
+    public ResponseEntity<InputStreamResource> uploadTwoFilesFromOld(
+            @RequestParam("srcFile") MultipartFile srcFile,
+            @RequestParam("datFile") MultipartFile datFile
+    ) {
+        try {
+            String transformedSrc = contentService.transformSrcFromKukaOld(new String(srcFile.getBytes()));
+            String transformedDat = contentService.transformDatFromKukaOld(new String(datFile.getBytes()));
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                zos.putNextEntry(new ZipEntry(srcFile.getOriginalFilename()));
+                zos.write(transformedSrc.getBytes());
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry(datFile.getOriginalFilename()));
+                zos.write(transformedDat.getBytes());
+                zos.closeEntry();
+            }
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            InputStreamResource resource = new InputStreamResource(bais);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ToKukaSimProgram.zip");
 
             return ResponseEntity.ok()
                     .headers(headers)
