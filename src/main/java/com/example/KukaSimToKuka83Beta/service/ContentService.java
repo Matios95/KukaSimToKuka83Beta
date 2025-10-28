@@ -27,6 +27,7 @@ public class ContentService {
         for (String line : lines) {
             m = p.matcher(line);
             if (m.find() && !line.contains(foldMove)) {
+                line = line.replace(" ;%{PE}", ";%{PE}");
                 output.add(generateLineKuka(line, m));
                 inMoveBlock = true;
                 continue;
