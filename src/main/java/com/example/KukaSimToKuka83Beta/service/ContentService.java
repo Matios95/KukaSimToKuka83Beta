@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 @Service
 public class ContentService {
 
-    public static String transformSrc(String input) {
+    public static String transformSrcToKukaOld(String input) {
         final String foldMove = ";%{PE}%R";
         final String foldParametersMove = ";FOLD Parameters ;%{h}";
         final String endFold = ";ENDFOLD";
@@ -28,7 +28,7 @@ public class ContentService {
             m = p.matcher(line);
             if (m.find() && !line.contains(foldMove)) {
                 line = line.replace(" ;%{PE}", ";%{PE}");
-                output.add(generateLineKuka(line, m));
+                output.add(generateLineToKukaOld(line, m));
                 inMoveBlock = true;
                 continue;
             }
@@ -50,7 +50,7 @@ public class ContentService {
 
     }
 
-    private static String generateLineKuka(String line, Matcher m) {
+    private static String generateLineToKukaOld(String line, Matcher m) {
         String rTag = "";
         String cParams = "";
         String type = m.group(1).toUpperCase();    //PTP, LIN, CIRC
@@ -83,7 +83,7 @@ public class ContentService {
     }
 
 
-    public String transformDat(String input) {
+    public String transformDatToKukaOld(String input) {
         String[] lines = input.split("\\R");
         StringBuilder output = new StringBuilder();
         Pattern e6Pattern = Pattern.compile("(E1\\s+)([-\\d.Ee]+)(,\\s*E2\\s+)([-\\d.Ee]+)(,\\s*E3\\s+)([-\\d.Ee]+)");

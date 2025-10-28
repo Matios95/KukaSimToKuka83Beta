@@ -35,8 +35,8 @@ public class WebController {
             @RequestParam("datFile") MultipartFile datFile
     ) {
         try {
-            String transformedSrc = contentService.transformSrc(new String(srcFile.getBytes()));
-            String transformedDat = contentService.transformDat(new String(datFile.getBytes()));
+            String transformedSrc = contentService.transformSrcToKukaOld(new String(srcFile.getBytes()));
+            String transformedDat = contentService.transformDatToKukaOld(new String(datFile.getBytes()));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(baos)) {
