@@ -123,7 +123,6 @@ public class ContentService {
     }
 
     public static String transformSrcFromKukaOld(String input) {
-        boolean inMoveBlock = false;
         List<String> lines = List.of(input.split("\\R")); // podział po liniach
         Matcher m;
         List<String> output = new ArrayList<>();
@@ -135,7 +134,7 @@ public class ContentService {
             output.add(line);
             if (m.find()) {
                 output.add(";FOLD Parameters ;%{h}");
-                output.add(generateLineFromKukaOld(line, m));
+                output.add(generateLineFromKukaOld(m));
                 output.add(";ENDFOLD");
             }
         }
@@ -143,8 +142,7 @@ public class ContentService {
 
     }
 
-    private static String generateLineFromKukaOld(String line, Matcher m) {
-        String rTag = "";
+    private static String generateLineFromKukaOld(Matcher m) {
         String cont = "False";
         String type = m.group(1).toUpperCase();    //PTP, LIN, CIRC
         String point = m.group(2);                 //p1, p2, home
@@ -152,37 +150,33 @@ public class ContentService {
         String vel = m.group(4);                   //40%, 1.0 m/s
         String dat = m.group(5);                   //PDAT1, CPDAT1
         if (cdis.contains("CONT")) cont = "True";
-        rTag = switch (type) {
-            case "PTP" -> {
-                yield String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
-                                "Kuka.IsGlobalPoint=False; " +
-                                "Kuka.PointName=%s; " +
-                                "Kuka.BlendingEnabled=%s; " +
-                                "Kuka.APXEnabled=False; " +
-                                "Kuka.MoveDataPtpName=%s; " +
-                                "Kuka.VelocityPtp=%s; " +
-                                "Kuka.CurrentCDSetIndex=0; " +
-                                "Kuka.MovementParameterFieldEnabled=True; " +
-                                "IlfCommand=PTP; " +
-                                "SimId=",
-                        point, cont, dat, vel);
-            }
+        String rTag = switch (type) {
+            case "PTP" -> String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
+                            "Kuka.IsGlobalPoint=False; " +
+                            "Kuka.PointName=%s; " +
+                            "Kuka.BlendingEnabled=%s; " +
+                            "Kuka.APXEnabled=False; " +
+                            "Kuka.MoveDataPtpName=%s; " +
+                            "Kuka.VelocityPtp=%s; " +
+                            "Kuka.CurrentCDSetIndex=0; " +
+                            "Kuka.MovementParameterFieldEnabled=True; " +
+                            "IlfCommand=PTP; " +
+                            "SimId=",
+                    point, cont, dat, vel);
 
-            case "LIN" -> {
-                yield String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
-                                "Kuka.IsGlobalPoint=False; " +
-                                "Kuka.PointName=%s; " +
-                                "Kuka.BlendingEnabled=%s; " +
-                                "Kuka.APXEnabled=False; " +
-                                "Kuka.MoveDataName=%s; " +
-                                "Kuka.VelocityPath=%s; " +
-                                "Kuka.CurrentCDSetIndex=0; " +
-                                "Kuka.MovementParameterFieldEnabled=True; " +
-                                "IlfCommand=LIN; " +
-                                "SimId=",
-                        point, cont, dat, vel);
-            }
-            default -> rTag;
+            case "LIN" -> String.format(";Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; " +
+                            "Kuka.IsGlobalPoint=False; " +
+                            "Kuka.PointName=%s; " +
+                            "Kuka.BlendingEnabled=%s; " +
+                            "Kuka.APXEnabled=False; " +
+                            "Kuka.MoveDataName=%s; " +
+                            "Kuka.VelocityPath=%s; " +
+                            "Kuka.CurrentCDSetIndex=0; " +
+                            "Kuka.MovementParameterFieldEnabled=True; " +
+                            "IlfCommand=LIN; " +
+                            "SimId=",
+                    point, cont, dat, vel);
+            default -> "";
         };
         System.out.println(rTag);
         return rTag;
