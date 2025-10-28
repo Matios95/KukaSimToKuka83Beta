@@ -21,9 +21,6 @@ public class ContentService {
         List<String> lines = List.of(input.split("\\R")); // podział po liniach
         Matcher m;
         List<String> output = new ArrayList<>();
-        //Pattern p = Pattern.compile(
-        //      ";FOLD\\s+(PTP|LIN|CIRC)\\s+(\\S+)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+)",
-        //    Pattern.CASE_INSENSITIVE); //TODO do przerobienia do dogrania CIRC
         Pattern p = Pattern.compile(
                 ";FOLD\\s+(PTP|LIN|CIRC)\\s(\\S+)\\s?(\\S+|)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+).",
                 Pattern.CASE_INSENSITIVE);
@@ -61,24 +58,25 @@ public class ContentService {
         String cdis = m.group(4);                  //CONT
         String vel = m.group(5);                   //40%, 1.0 m/s
         String dat = m.group(6);                   //PDAT1, CPDAT1
-        switch (type) {
-            case "PTP":
+        rTag = switch (type) {
+            case "PTP" -> {
                 if (cdis.contains("CONT")) cParams = "C_PTP";
-                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VPTP,%%P 1:PTP, 2:%s, 3:%s, 5:%s, 7:%s",
+                yield String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VPTP,%%P 1:PTP, 2:%s, 3:%s, 5:%s, 7:%s",
                         point, cParams, vel, dat);
-                break;
-            case "LIN":
+            }
+            case "LIN" -> {
                 if (cdis.contains("CONT")) cParams = "C_DIS C_DIS";
-                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VLIN,%%P 1:LIN, 2:%s, 3:%s, 5:%s, 7:%s",
+                yield String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VLIN,%%P 1:LIN, 2:%s, 3:%s, 5:%s, 7:%s",
                         point, cParams, vel, dat);
-                break;
-            case "CIRC":
+            }
+            case "CIRC" -> {
                 // dla CIRC potrzebujemy dwóch punktów w %P
                 if (cdis.contains("CONT")) cParams = "C_DIS C_DIS";
-                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VCIRC,%%P 1:CIRC, 2:%s, 3:%s, 4:%s, 6:%s, 8:%s",
+                yield String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VCIRC,%%P 1:CIRC, 2:%s, 3:%s, 4:%s, 6:%s, 8:%s",
                         point, point2, cParams, vel, dat);
-                break;
-        }
+            }
+            default -> rTag;
+        };
         System.out.println(rTag);
         return line + rTag;
     }
@@ -87,7 +85,7 @@ public class ContentService {
     public String transformDat(String input) {
         String[] lines = input.split("\\R");
         StringBuilder output = new StringBuilder();
-        Pattern e6Pattern = Pattern.compile("(E1\\s+)([-\\d\\.Ee]+)(,\\s*E2\\s+)([-\\d\\.Ee]+)(,\\s*E3\\s+)([-\\d\\.Ee]+)");
+        Pattern e6Pattern = Pattern.compile("(E1\\s+)([-\\d.Ee]+)(,\\s*E2\\s+)([-\\d.Ee]+)(,\\s*E3\\s+)([-\\d.Ee]+)");
 
         for (String line : lines) {
             Matcher m = e6Pattern.matcher(line);
