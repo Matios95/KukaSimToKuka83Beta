@@ -3,76 +3,84 @@ package com.example.KukaSimToKuka83Beta.service;
 
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
 public class ContentService {
 
-    public String transformSrc(String input) {
-        String[] lines = input.split("\\R"); // podział po liniach
+    public static String transformSrc(String input) {
+        final String foldMove = ";%{PE}%R";
+        final String foldParametersMove = ";FOLD Parameters ;%{h}";
+        final String endFold = ";ENDFOLD";
+        final String setCdParams = "SET_CD_PARAMS (0)";
+        boolean inParametersBlock = false;
+        boolean inMoveBlock = false;
+        List<String> lines = List.of(input.split("\\R")); // podział po liniach
+        Matcher m;
         List<String> output = new ArrayList<>();
-
-        // Regex do wykrycia nagłówków bloków PTP/LIN/CIRC
-        Pattern foldPattern = Pattern.compile("^;FOLD\\s+(PTP|LIN|CIRC).*%\\{PE\\}.*");
-        Pattern endFoldPattern = Pattern.compile("^;ENDFOLD");
-
-        List<String> currentBlock = null;
-
+        //Pattern p = Pattern.compile(
+        //      ";FOLD\\s+(PTP|LIN|CIRC)\\s+(\\S+)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+)",
+        //    Pattern.CASE_INSENSITIVE); //TODO do przerobienia do dogrania CIRC
+        Pattern p = Pattern.compile(
+                ";FOLD\\s+(PTP|LIN|CIRC)\\s(\\S+)\\s?(\\S+|)\\s+(CONT|)?\\s*Vel=([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|m/s)?\\s*(\\S+).",
+                Pattern.CASE_INSENSITIVE);
         for (String line : lines) {
-            String trimmed = line.trim();
-
-            // Usuń SET_CD_PARAMS (0)
-            if (trimmed.equals("SET_CD_PARAMS (0)")) continue;
-
-            // Start nowego bloku
-            if (foldPattern.matcher(trimmed).find()) {
-                currentBlock = new ArrayList<>();
-                currentBlock.add(line);
-                System.out.println("Start block detected: " + trimmed);
+            m = p.matcher(line);
+            if (m.find() && !line.contains(foldMove)) {
+                output.add(generateLineKuka(line, m));
+                inMoveBlock = true;
                 continue;
             }
-
-            // Jeśli jesteśmy w bloku
-            if (currentBlock != null) {
-                currentBlock.add(line);
-
-                // Koniec bloku
-                if (endFoldPattern.matcher(trimmed).find()) {
-                    System.out.println("End block detected");
-                    // Dodajemy cały blok do output
-                    output.addAll(currentBlock);
-                    currentBlock = null;
+            if (line.contains(setCdParams)) continue;
+            if (line.contains(foldParametersMove) && inMoveBlock) {
+                inParametersBlock = true; // start usuwania
+                continue; // nie dodajemy tej linii
+            }
+            if (inParametersBlock) {
+                if (line.contains(endFold)) {
+                    inParametersBlock = false; // koniec bloku Parameters
                 }
                 continue;
             }
-
-            // Linie poza blokiem
+            if (inMoveBlock && line.contains(endFold)) inMoveBlock = false;
             output.add(line);
         }
-
         return String.join(System.lineSeparator(), output);
+
     }
 
-    public static void main(String[] args) {
-        String testInput = """
-                ;FOLD PTP HOME Vel=100 % DEFAULT Tool[1]:TOOL_DATA[1] Base[0] ;%{PE}
-                    ;FOLD Parameters ;%{h}
-                       ;Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; Kuka.IsGlobalPoint=False; Kuka.PointName=HOME; Kuka.BlendingEnabled=False; Kuka.APXEnabled=False; Kuka.MoveDataPtpName=DEFAULT; Kuka.VelocityPtp=100; Kuka.CurrentCDSetIndex=0; Kuka.MovementParameterFieldEnabled=True; IlfCommand=PTP; SimId=
-                    ;ENDFOLD
-                    $BWDSTART = FALSE
-                    PDAT_ACT = PDEFAULT
-                    FDAT_ACT = FHOME
-                    BAS(#PTP_PARAMS, 100.0)
-                    SET_CD_PARAMS (0)
-                    PTP XHOME
-                 ;ENDFOLD
-                """;
-
-        ContentService service = new ContentService();
-        String result = service.transformSrc(testInput);
-        System.out.println("\n--- Transformed content ---\n" + result);
+    private static String generateLineKuka(String line, Matcher m) {
+        String rTag = "";
+        String cParams = "";
+        String type = m.group(1).toUpperCase();    //PTP, LIN, CIRC
+        String point = m.group(2);                 //p1, p2, home
+        String point2 = m.group(3);                //p1, p2, home w przypadku CIRC!
+        String cdis = m.group(4);                  //CONT
+        String vel = m.group(5);                   //40%, 1.0 m/s
+        String dat = m.group(6);                   //PDAT1, CPDAT1
+        switch (type) {
+            case "PTP":
+                if (cdis.contains("CONT")) cParams = "C_PTP";
+                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VPTP,%%P 1:PTP, 2:%s, 3:%s, 5:%s, 7:%s",
+                        point, cParams, vel, dat);
+                break;
+            case "LIN":
+                if (cdis.contains("CONT")) cParams = "C_DIS C_DIS";
+                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VLIN,%%P 1:LIN, 2:%s, 3:%s, 5:%s, 7:%s",
+                        point, cParams, vel, dat);
+                break;
+            case "CIRC":
+                // dla CIRC potrzebujemy dwóch punktów w %P
+                if (cdis.contains("CONT")) cParams = "C_DIS C_DIS";
+                rTag = String.format("%%R 8.3.22,%%MKUKATPBASIS,%%CMOVE,%%VCIRC,%%P 1:CIRC, 2:%s, 3:%s, 4:%s, 6:%s, 8:%s",
+                        point, point2, cParams, vel, dat);
+                break;
+        }
+        System.out.println(rTag);
+        return line + rTag;
     }
 
 
