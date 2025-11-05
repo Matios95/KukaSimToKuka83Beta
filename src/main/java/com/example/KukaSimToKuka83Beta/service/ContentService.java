@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class ContentService {
+    static final String touchSense = "TouchSense";
 
     public static String transformSrcToKukaOld(String input) {
         final String foldMove = ";%{PE}%R";
@@ -26,7 +27,7 @@ public class ContentService {
                 Pattern.CASE_INSENSITIVE);
         for (String line : lines) {
             m = p.matcher(line);
-            if (m.find() && !line.contains(foldMove)) {
+            if (m.find() && !line.contains(foldMove) && !line.contains(touchSense)) {
                 line = line.replace(" ;%{PE}", ";%{PE}");
                 output.add(generateLineToKukaOld(line, m));
                 inMoveBlock = true;
@@ -112,7 +113,7 @@ public class ContentService {
                 String e2 = m.group(4);
                 String e3 = m.group(6);
                 String newLine = m.replaceAll("E1 0.0,E2 " + e2 + ",E3 " + e3);
-                if (!e2.equals(e3)) System.out.println("Problem E2 != E3!!!!!!!" + line);
+                if (!e2.equals(e3)) System.out.println("!!!!!!!!!!!!!! \n Problem E2 != E3!!!!!!!" + line + "\n!!!!!!!!!!!!!!");
                 output.append(newLine).append(System.lineSeparator());
             } else {
                 output.append(line).append(System.lineSeparator());
@@ -132,7 +133,7 @@ public class ContentService {
         for (String line : lines) {
             m = p.matcher(line);
             output.add(line);
-            if (m.find()) {
+            if (m.find() && !line.contains(touchSense)) {
                 output.add(";FOLD Parameters ;%{h}");
                 output.add(generateLineFromKukaOld(m));
                 output.add(";ENDFOLD");
